@@ -1,32 +1,32 @@
 {
-  "name": "@amin-karimi/agm-snazzy-info-window",
-  "version": "1.0.3",
-  "description": "Angular Google Maps (AGM) package for Snazzy Info Window support",
-  "author": "Sebastian Holstein <info@sebastian-holstein.de>",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/Amin-Karimi/angular-google-maps.git"
-  },
-  "homepage": "https://angular-maps.com",
-  "keywords": [
-    "angular-google-maps",
-    "angular",
-    "google-maps",
-    "agm",
-    "snazzy-info-window"
-  ],
-  "peerDependencies": {
-    "@amin-karimi/agm-core": "1.0.3",
-    "@angular/common": "^14.2.0",
-    "@angular/core": "^14.2.0",
-    "snazzy-info-window": "^1.1.0"
-  },
-  "dependencies": {
-    "tslib": "^2.4.0"
-  },
-  "devDependencies": {
-    "@types/google.maps": "^3.51.0",
-    "@amin-karimi/agm-core": "1.0.0"
-  }
+    "name": "@amin-karimi/agm-snazzy-info-window",
+    "version": "1.0.4",
+    "description": "Angular Google Maps (AGM) package for Snazzy Info Window support",
+    "author": "Sebastian Holstein <info@sebastian-holstein.de>",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/Amin-Karimi/angular-google-maps.git"
+    },
+    "homepage": "https://angular-maps.com",
+    "keywords": [
+        "angular-google-maps",
+        "angular",
+        "google-maps",
+        "agm",
+        "snazzy-info-window"
+    ],
+    "peerDependencies": {
+        "@amin-karimi/agm-core": "1.0.4",
+        "@angular/common": "^14.2.0",
+        "@angular/core": "^14.2.0",
+        "snazzy-info-window": "^1.1.0"
+    },
+    "dependencies": {
+        "tslib": "^2.4.0"
+    },
+    "devDependencies": {
+        "@types/google.maps": "^3.51.0",
+        "@amin-karimi/agm-core": "1.0.0"
+    }
 }
