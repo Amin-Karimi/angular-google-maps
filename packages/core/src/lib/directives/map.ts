@@ -179,6 +179,10 @@ export class AgmZoomControl extends AgmMapControl {
     }
   `],
   template: `
+              <div id="floating-panel">
+                <input type="button" value="Toggle Street View" id="toggle" style="margin-bottom: 5px;
+                padding: 3px 8px; border-radius: 5px; border: none; background-color: #0e5ff7;color: white;" (click)="toggleStreetView()"/>
+              </div>
               <div class='agm-map-container-inner sebm-google-map-container-inner'></div>
               <div class='agm-map-content'>
                 <ng-content></ng-content>
@@ -195,6 +199,8 @@ export class AgmMap implements OnChanges, AfterContentInit, OnDestroy {
    * The latitude that defines the center of the map.
    */
   @Input() latitude = 0;
+
+  @Input() streetView: google.maps.StreetViewPov = { heading: 0, pitch: 0 }
 
   /**
    * The zoom level of the map. The default zoom level is 8.
@@ -410,6 +416,8 @@ export class AgmMap implements OnChanges, AfterContentInit, OnDestroy {
    */
   @Output() tilesLoaded: EventEmitter<void> = new EventEmitter<void>();
 
+  @Output() streetViewEvent: EventEmitter<any> = new EventEmitter<any>()
+
   @ContentChildren(AgmMapControl) mapControls: QueryList<AgmMapControl>;
 
   constructor(
@@ -453,9 +461,10 @@ export class AgmMap implements OnChanges, AfterContentInit, OnDestroy {
       gestureHandling: this.gestureHandling,
       tilt: this.tilt,
       restriction: this.restriction,
-    })
+    }, this.streetView)
       .then(() => this._mapsWrapper.getNativeMap())
-      .then(map => this.mapReady.emit(map));
+      .then(map => this.mapReady.emit(map))
+      .then(() => this._addPanoramaEvent())
 
     // register event listeners
     this._handleMapCenterChange();
@@ -484,6 +493,18 @@ export class AgmMap implements OnChanges, AfterContentInit, OnDestroy {
   ngOnChanges(changes: SimpleChanges) {
     this._updateMapOptionsChanges(changes);
     this._updatePosition(changes);
+  }
+
+  toggleStreetView() {
+    const toggle = this._mapsWrapper.panorama.getVisible();
+
+    if (toggle == false) {
+      this._mapsWrapper.panorama.setVisible(true);
+      return
+    }
+
+    this._mapsWrapper.panorama.setVisible(false);
+
   }
 
   private _updateMapOptionsChanges(changes: SimpleChanges) {
@@ -662,6 +683,7 @@ export class AgmMap implements OnChanges, AfterContentInit, OnDestroy {
           }
           event.coords = event.latLng.toJSON()
           e.emitter.emit(event);
+          this._mapsWrapper.panorama.setPosition(event.latLng.toJSON())
         });
       this._observableSubscriptions.push(s);
     });
@@ -684,5 +706,20 @@ export class AgmMap implements OnChanges, AfterContentInit, OnDestroy {
     };
     this.mapControls.forEach(control => Object.assign(controlOptions, control.getOptions()));
     this._mapsWrapper.setMapOptions(controlOptions);
+  }
+
+  private _addPanoramaEvent() {
+    this._mapsWrapper.panorama.addListener("position_changed", () => {
+      this.streetViewEvent.next(this._getCameraPosition())
+    });
+
+    this._mapsWrapper.panorama.addListener("pov_changed", () => {
+      this.streetViewEvent.next(this._getCameraPosition())
+    });
+  }
+
+  private _getCameraPosition() {
+    var position = [this._mapsWrapper.panorama.getPov(), this._mapsWrapper.panorama.getPosition().toJSON()]
+    return position;
   }
 }

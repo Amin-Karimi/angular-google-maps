@@ -9,6 +9,7 @@ import { MapsAPILoader } from './maps-api-loader/maps-api-loader';
  */
 @Injectable()
 export class GoogleMapsAPIWrapper {
+  panorama: google.maps.StreetViewPanorama;
   private _map: Promise<google.maps.Map>;
   private _mapResolver: (value?: google.maps.Map) => void;
 
@@ -17,16 +18,23 @@ export class GoogleMapsAPIWrapper {
       new Promise<google.maps.Map>((resolve) => { this._mapResolver = resolve; });
   }
 
-  createMap(el: HTMLElement, mapOptions: google.maps.MapOptions): Promise<void> {
+  createMap(el: HTMLElement, mapOptions: google.maps.MapOptions, streetView?: google.maps.StreetViewPov): Promise<void> {
     return this._zone.runOutsideAngular(() => {
       return this._loader.load().then(() => {
         const map = new google.maps.Map(el, mapOptions);
+        this.panorama = map.getStreetView()!;
+        this.panorama.setPosition(mapOptions.center);
+        this.panorama.setPov(
+          /** @type {google.maps.StreetViewPov} */ {
+            heading: streetView.heading,
+            pitch: streetView.pitch,
+          }
+        );
         this._mapResolver(map);
         return;
       });
     });
   }
-
   setMapOptions(options: google.maps.MapOptions) {
     return this._zone.runOutsideAngular(() => {
       this._map.then((m: google.maps.Map) => { m.setOptions(options); });
