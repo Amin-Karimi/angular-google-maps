@@ -1,3 +1,4 @@
+import { CommonModule } from '@angular/common';
 import { ModuleWithProviders, NgModule } from '@angular/core';
 
 import { AgmBicyclingLayer } from './directives/bicycling-layer';
@@ -53,7 +54,7 @@ export function coreDirectives() {
  * The angular-google-maps core module. Contains all Directives/Services/Pipes
  * of the core module. Please use `AgmCoreModule.forRoot()` in your app module.
  */
-@NgModule({declarations: coreDirectives(), exports: coreDirectives()})
+@NgModule({ imports: [CommonModule], declarations: coreDirectives(), exports: coreDirectives() })
 export class AgmCoreModule {
   /**
    * Please use this method when you register the module at the root level.
@@ -62,8 +63,8 @@ export class AgmCoreModule {
     return {
       ngModule: AgmCoreModule,
       providers: [
-        ...BROWSER_GLOBALS_PROVIDERS, {provide: MapsAPILoader, useClass: LazyMapsAPILoader},
-        {provide: LAZY_MAPS_API_CONFIG, useValue: lazyMapsAPILoaderConfig},
+        ...BROWSER_GLOBALS_PROVIDERS, { provide: MapsAPILoader, useClass: LazyMapsAPILoader },
+        { provide: LAZY_MAPS_API_CONFIG, useValue: lazyMapsAPILoaderConfig },
       ],
     };
   }

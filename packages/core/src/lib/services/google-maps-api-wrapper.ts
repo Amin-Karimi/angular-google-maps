@@ -10,27 +10,28 @@ import { MapsAPILoader } from './maps-api-loader/maps-api-loader';
 @Injectable()
 export class GoogleMapsAPIWrapper {
   panorama: google.maps.StreetViewPanorama;
+  map: google.maps.Map;
   private _map: Promise<google.maps.Map>;
   private _mapResolver: (value?: google.maps.Map) => void;
+  allMarkers: google.maps.Marker[] = [];
 
   constructor(private _loader: MapsAPILoader, private _zone: NgZone) {
-    this._map =
-      new Promise<google.maps.Map>((resolve) => { this._mapResolver = resolve; });
+    this._map = new Promise<google.maps.Map>((resolve) => { this._mapResolver = resolve; });
   }
 
-  createMap(el: HTMLElement, mapOptions: google.maps.MapOptions, streetView?: google.maps.StreetViewPov): Promise<void> {
+  createMap(el: HTMLElement, mapOptions: google.maps.MapOptions, streetView?: google.maps.StreetViewPov, streetViewlatlng?: any): Promise<void> {
     return this._zone.runOutsideAngular(() => {
       return this._loader.load().then(() => {
-        const map = new google.maps.Map(el, mapOptions);
-        this.panorama = map.getStreetView()!;
-        this.panorama.setPosition(mapOptions.center);
+        this.map = new google.maps.Map(el, mapOptions);
+        this.panorama = this.map.getStreetView()!;
+        this.panorama.setPosition(streetViewlatlng);
         this.panorama.setPov(
           /** @type {google.maps.StreetViewPov} */ {
             heading: streetView.heading,
             pitch: streetView.pitch,
           }
         );
-        this._mapResolver(map);
+        this._mapResolver(this.map);
         return;
       });
     });
@@ -51,7 +52,9 @@ export class GoogleMapsAPIWrapper {
         if (addToMap) {
           options.map = map;
         }
-        return new google.maps.Marker(options);
+        var marker = new google.maps.Marker(options);
+        this.allMarkers.push(marker)
+        return marker
       });
     });
   }
@@ -240,5 +243,17 @@ export class GoogleMapsAPIWrapper {
    */
   triggerMapEvent(eventName: string): Promise<void> {
     return this._map.then((m) => google.maps.event.trigger(m, eventName));
+  }
+
+  setMapOnAll(map: google.maps.Map | null) {
+    for (let i = 0; i < this.allMarkers.length; i++) {
+      this.allMarkers[i].setMap(map);
+    }
+  }
+  hideMarkers() {
+    this.setMapOnAll(null);
+  }
+  showMarkers() {
+    this.setMapOnAll(this.map);
   }
 }

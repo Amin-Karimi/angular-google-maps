@@ -1,6 +1,7 @@
 import { isPlatformServer } from '@angular/common';
 import { AfterContentInit, Component, ContentChildren, Directive, ElementRef, EventEmitter, Inject, Input, NgZone, OnChanges, OnDestroy, Output, PLATFORM_ID, QueryList, SimpleChanges } from '@angular/core';
 import { Subscription } from 'rxjs';
+import { MapStreetViewLatLngModel, MapStreetViewModel } from '../models/map-street-view.model';
 
 import { FitBoundsService } from '../services/fit-bounds';
 import { GoogleMapsAPIWrapper } from '../services/google-maps-api-wrapper';
@@ -177,15 +178,46 @@ export class AgmZoomControl extends AgmMapControl {
     .agm-map-content {
       display:none;
     }
+    .toggle-street-view {
+      margin-bottom: 5px;
+      padding: 3px 8px; 
+      border-radius: 5px; 
+      border: none;
+      background-color: #0e5ff7;
+      color: white;
+    }
+    .toggle-street-view:hover {
+      opacity: 0.8;
+      color: white;
+      transform: scale(1.03);
+    }
+  
+    .toggle-street-view:active {
+      animation: pulse .4s;
+      transition: .2s;
+    }
+  
+    @keyframes pulse {
+      0% {
+        transform: scale(1);
+      }
+  
+      70% {
+        transform: scale(.9);
+      }
+  
+      100% {
+        transform: scale(1);
+      }
+    }
   `],
   template: `
-              <div id="floating-panel">
-                <input type="button" value="Toggle Street View" id="toggle" style="margin-bottom: 5px;
-                padding: 3px 8px; border-radius: 5px; border: none; background-color: #0e5ff7;color: white;" (click)="toggleStreetView()"/>
+              <div *ngIf="streetViewButton == true">
+                <button type="button" id="toggle" class="toggle-street-view" (click)="toggleStreetView()">Toggle Street View</button>
               </div>
-              <div class='agm-map-container-inner sebm-google-map-container-inner'></div>
-              <div class='agm-map-content'>
-                <ng-content></ng-content>
+              <div class='agm-map-container-inner sebm-google-map-container-inner' id="agm-map-content"></div>
+              <div  class='agm-map-content' >
+               <ng-content></ng-content>
               </div>
   `,
 })
@@ -200,7 +232,10 @@ export class AgmMap implements OnChanges, AfterContentInit, OnDestroy {
    */
   @Input() latitude = 0;
 
-  @Input() streetView: google.maps.StreetViewPov = { heading: 0, pitch: 0 }
+  @Input() streetViewPov: google.maps.StreetViewPov = { heading: 0, pitch: 0 }
+  @Input() streetViewlatlng: MapStreetViewLatLngModel = { lat: 0, lng: 0 }
+
+  @Input() streetViewButton: boolean = false
 
   /**
    * The zoom level of the map. The default zoom level is 8.
@@ -416,9 +451,11 @@ export class AgmMap implements OnChanges, AfterContentInit, OnDestroy {
    */
   @Output() tilesLoaded: EventEmitter<void> = new EventEmitter<void>();
 
-  @Output() streetViewEvent: EventEmitter<any> = new EventEmitter<any>()
+  @Output() streetViewEvent: EventEmitter<MapStreetViewModel | null> = new EventEmitter<MapStreetViewModel | null>()
 
   @ContentChildren(AgmMapControl) mapControls: QueryList<AgmMapControl>;
+
+  addPanoramaEventForFirstRun: boolean = true
 
   constructor(
     private _elem: ElementRef,
@@ -438,9 +475,16 @@ export class AgmMap implements OnChanges, AfterContentInit, OnDestroy {
     // todo: this should be solved with a new component and a viewChild decorator
     const container = this._elem.nativeElement.querySelector('.agm-map-container-inner');
     this._initMapInstance(container);
+
+
   }
 
   private _initMapInstance(el: HTMLElement) {
+    if (this.checkStreetViewModel()) {
+      this.streetViewlatlng = { lat: 0, lng: 0 }
+      this.streetViewPov = { heading: 0, pitch: 0 }
+    }
+
     this._mapsWrapper.createMap(el, {
       center: { lat: this.latitude || 0, lng: this.longitude || 0 },
       zoom: this.zoom,
@@ -461,10 +505,9 @@ export class AgmMap implements OnChanges, AfterContentInit, OnDestroy {
       gestureHandling: this.gestureHandling,
       tilt: this.tilt,
       restriction: this.restriction,
-    }, this.streetView)
+    }, this.streetViewPov, this.streetViewlatlng)
       .then(() => this._mapsWrapper.getNativeMap())
       .then(map => this.mapReady.emit(map))
-      .then(() => this._addPanoramaEvent())
 
     // register event listeners
     this._handleMapCenterChange();
@@ -497,14 +540,30 @@ export class AgmMap implements OnChanges, AfterContentInit, OnDestroy {
 
   toggleStreetView() {
     const toggle = this._mapsWrapper.panorama.getVisible();
+    if (this.addPanoramaEventForFirstRun) {
+      this._addPanoramaEvent()
+      this.addPanoramaEventForFirstRun = false
+    }
 
     if (toggle == false) {
+      if (this.checkStreetViewModel()) {
+        this.streetViewlatlng = { lat: this.latitude, lng: this.longitude }
+        this.streetViewPov = { heading: 0, pitch: 0 }
+      }
+      this._mapsWrapper.hideMarkers()
+      this._mapsWrapper.panorama.setPosition(this.streetViewlatlng)
       this._mapsWrapper.panorama.setVisible(true);
       return
     }
-
+    this._mapsWrapper.showMarkers()
     this._mapsWrapper.panorama.setVisible(false);
+  }
 
+  checkStreetViewModel(): boolean {
+    if ((!this.streetViewlatlng?.lat || !this.streetViewlatlng?.lng) && (!this.streetViewPov?.heading || !this.streetViewPov?.pitch)) {
+      return true
+    }
+    return false
   }
 
   private _updateMapOptionsChanges(changes: SimpleChanges) {
@@ -709,17 +768,21 @@ export class AgmMap implements OnChanges, AfterContentInit, OnDestroy {
   }
 
   private _addPanoramaEvent() {
+    const toggle = !this._mapsWrapper.panorama.getVisible();
     this._mapsWrapper.panorama.addListener("position_changed", () => {
-      this.streetViewEvent.next(this._getCameraPosition())
+      if (toggle)
+        this.streetViewEvent.emit(this._getCameraPosition())
     });
 
     this._mapsWrapper.panorama.addListener("pov_changed", () => {
-      this.streetViewEvent.next(this._getCameraPosition())
+      if (toggle)
+        this.streetViewEvent.emit(this._getCameraPosition())
     });
+
   }
 
   private _getCameraPosition() {
-    var position = [this._mapsWrapper.panorama.getPov(), this._mapsWrapper.panorama.getPosition().toJSON()]
+    const position: MapStreetViewModel = { Pov: this._mapsWrapper.panorama.getPov() as any, coords: this._mapsWrapper.panorama.getPosition().toJSON() as any }
     return position;
   }
 }
