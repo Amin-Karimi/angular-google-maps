@@ -31,7 +31,8 @@ export class GoogleMapsAPIWrapper {
             pitch: streetView.pitch,
           }
         );
-        this.panorama.setOptions({ zoom: streetView.zoom })
+        // this.panorama.setOptions({ zoom: streetView.zoom })
+        this.panorama.setZoom(streetView.zoom)
         this._mapResolver(this.map);
         return;
       });
