@@ -9,5 +9,5 @@ export class MapStreetViewPovModel {
 }
 export class MapStreetViewModel {
     coords: MapStreetViewLatLngModel;
-    Pov: MapStreetViewPovModel
+    pov: MapStreetViewPovModel
 }

@@ -2,7 +2,7 @@ import { Injectable, NgZone } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { MapsAPILoader } from './maps-api-loader/maps-api-loader';
-
+import { MapStreetViewPovModel } from '../models/map-street-view.model'
 /**
  * Wrapper class that handles the communication with the Google Maps Javascript
  * API v3
@@ -19,7 +19,7 @@ export class GoogleMapsAPIWrapper {
     this._map = new Promise<google.maps.Map>((resolve) => { this._mapResolver = resolve; });
   }
 
-  createMap(el: HTMLElement, mapOptions: google.maps.MapOptions, streetView?: google.maps.StreetViewPov, streetViewlatlng?: any): Promise<void> {
+  createMap(el: HTMLElement, mapOptions: google.maps.MapOptions, streetView?: MapStreetViewPovModel, streetViewlatlng?: any): Promise<void> {
     return this._zone.runOutsideAngular(() => {
       return this._loader.load().then(() => {
         this.map = new google.maps.Map(el, mapOptions);
@@ -31,6 +31,7 @@ export class GoogleMapsAPIWrapper {
             pitch: streetView.pitch,
           }
         );
+        this.panorama.setOptions({ zoom: streetView.zoom })
         this._mapResolver(this.map);
         return;
       });
