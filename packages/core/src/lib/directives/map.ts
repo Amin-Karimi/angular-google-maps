@@ -1,7 +1,7 @@
 import { isPlatformServer } from '@angular/common';
 import { AfterContentInit, Component, ContentChildren, Directive, ElementRef, EventEmitter, Inject, Input, NgZone, OnChanges, OnDestroy, Output, PLATFORM_ID, QueryList, SimpleChanges } from '@angular/core';
 import { Subscription } from 'rxjs';
-import { MapStreetViewLatLngModel, MapStreetViewModel } from '../models/map-street-view.model';
+import { MapStreetViewLatLngModel, MapStreetViewModel, MapStreetViewPovModel } from '../models/map-street-view.model';
 
 import { FitBoundsService } from '../services/fit-bounds';
 import { GoogleMapsAPIWrapper } from '../services/google-maps-api-wrapper';
@@ -232,7 +232,7 @@ export class AgmMap implements OnChanges, AfterContentInit, OnDestroy {
    */
   @Input() latitude = 0;
 
-  @Input() streetViewPov: google.maps.StreetViewPov = { heading: 0, pitch: 0 }
+  @Input() streetViewPov: MapStreetViewPovModel = { heading: 0, pitch: 0, zoom: 0 }
   @Input() streetViewlatlng: MapStreetViewLatLngModel = { lat: 0, lng: 0 }
 
   @Input() streetViewButton: boolean = false
@@ -548,7 +548,7 @@ export class AgmMap implements OnChanges, AfterContentInit, OnDestroy {
     if (toggle == false) {
       if (this.checkStreetViewModel()) {
         this.streetViewlatlng = { lat: this.latitude, lng: this.longitude }
-        this.streetViewPov = { heading: 0, pitch: 0 }
+        this.streetViewPov = { heading: 0, pitch: 0, zoom: 0 }
       }
       this._mapsWrapper.hideMarkers()
       this._mapsWrapper.panorama.setPosition(this.streetViewlatlng)
@@ -768,21 +768,21 @@ export class AgmMap implements OnChanges, AfterContentInit, OnDestroy {
   }
 
   private _addPanoramaEvent() {
-    const toggle = !this._mapsWrapper.panorama.getVisible();
     this._mapsWrapper.panorama.addListener("position_changed", () => {
-      if (toggle)
-        this.streetViewEvent.emit(this._getCameraPosition())
+      this.panoramaListenersChanged()
     });
 
     this._mapsWrapper.panorama.addListener("pov_changed", () => {
-      if (toggle)
-        this.streetViewEvent.emit(this._getCameraPosition())
+      this.panoramaListenersChanged()
     });
 
   }
+  panoramaListenersChanged() {
+    this.streetViewEvent.emit(this._getCameraPosition())
+  }
 
   private _getCameraPosition() {
-    const position: MapStreetViewModel = { Pov: this._mapsWrapper.panorama.getPov() as any, coords: this._mapsWrapper.panorama.getPosition().toJSON() as any }
+    const position: MapStreetViewModel = { pov: this._mapsWrapper.panorama.getPov() as any, coords: this._mapsWrapper.panorama.getPosition().toJSON() as any }
     return position;
   }
 }
