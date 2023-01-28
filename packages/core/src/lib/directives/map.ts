@@ -776,6 +776,10 @@ export class AgmMap implements OnChanges, AfterContentInit, OnDestroy {
       this.panoramaListenersChanged()
     });
 
+    this._mapsWrapper.panorama.addListener("zoom_changed", () => {
+      this.panoramaListenersChanged()
+    });
+
   }
   panoramaListenersChanged() {
     this.streetViewEvent.emit(this._getCameraPosition())
