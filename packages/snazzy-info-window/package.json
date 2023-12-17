@@ -27,6 +27,6 @@
   },
   "devDependencies": {
     "@types/google.maps": "^3.51.0",
-    "@amin-karimi/agm-core": "1.0.0"
+    "@amin-karimi/agm-core": "2.0.0"
   }
 }
